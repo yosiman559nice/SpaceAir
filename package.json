@@ -1,0 +1,19 @@
+{
+  "name": "visit-logger",
+  "version": "0.1.0",
+  "description": "Single-page visit logger backed by Express.",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "dev": "node index.js",
+    "start": "NODE_ENV=production node index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "helmet": "^7.0.0"
+  }
+}
+

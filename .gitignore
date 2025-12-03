@@ -1,0 +1,5 @@
+PROMPTS.md
+node_modules/
+data/
+*.log
+
