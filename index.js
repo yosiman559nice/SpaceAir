@@ -34,6 +34,15 @@ async function ensureLogFile() {
 const app = express();
 app.set('trust proxy', 1);
 app.use(helmet());
+
+// Request logging middleware
+app.use((req, res, next) => {
+  const timestamp = new Date().toISOString();
+  const ip = sanitize(req.ip);
+  console.log(`[REQUEST] ${timestamp} | ${req.method} ${req.path} | IP: ${ip}`);
+  next();
+});
+
 app.use(express.json({ limit: '5kb' }));
 app.use(
   express.static(path.join(process.cwd(), 'public'), {
@@ -51,6 +60,10 @@ app.post('/api/visit', async (req, res, next) => {
     const line = `${timestamp}\t${ip}\t${timezone}\t${userAgent}\n`;
 
     await fsp.appendFile(LOG_FILE, line, 'utf8');
+    
+    // Log visitor information to console (visible in Render logs)
+    console.log(`[VISITOR] ${timestamp} | IP: ${ip} | Timezone: ${timezone} | User-Agent: ${userAgent}`);
+    
     res.status(201).json({ ok: true, recordedAt: timestamp });
   } catch (error) {
     next(error);
@@ -67,6 +80,7 @@ app.get('/api/visits/latest', async (req, res, next) => {
       const [timestamp, ip, timezone, userAgent] = row.split('\t');
       return { timestamp, ip, timezone, userAgent };
     });
+    console.log(`[API] GET /api/visits/latest - Returning ${entries.length} entries`);
     res.json({ entries });
   } catch (error) {
     if (error.code === 'ENOENT') {
@@ -77,12 +91,14 @@ app.get('/api/visits/latest', async (req, res, next) => {
   }
 });
 
-app.get('/api/visits/count', async (_req, res, next) => {
+app.get('/api/visits/count', async (req, res, next) => {
   try {
     const fileContents = await fsp.readFile(LOG_FILE, 'utf8');
     const rows = fileContents.trim().split('\n');
     const [, ...dataRows] = rows;
-    res.json({ count: dataRows.filter(Boolean).length });
+    const count = dataRows.filter(Boolean).length;
+    console.log(`[API] GET /api/visits/count - Total visits: ${count}`);
+    res.json({ count });
   } catch (error) {
     if (error.code === 'ENOENT') {
       res.json({ count: 0 });
